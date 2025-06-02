@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Health Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7f7f7; padding: 2rem; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+    h1 { text-align: center; }
+    .step { margin-bottom: 2rem; }
+    .step button, .step input[type="file"] { padding: 0.75rem 1.5rem; margin-top: 1rem; font-size: 1rem; }
+    .rating { font-size: 1.2rem; margin-top: 1rem; }
+    .star { color: gold; }
+    .result { margin-top: 1rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>System Health Checker</h1>
+
+    <div class="step">
+      <h2>Step 1: Download the System Checker</h2>
+      <a href="https://drive.google.com/uc?export=download&id=177HegOd4v5ITY8g4lwj3W6WHkOrRZDLc" target="_blank">
+        <button>Download .bat File</button>
+      </a>
+    </div>
+
+    <div class="step">
+      <h2>Step 2: Run the Downloaded File</h2>
+      <p>This will generate a <strong>system_report.txt</strong> file in the same folder.</p>
+    </div>
+
+    <div class="step">
+      <h2>Step 3: Upload Your system_report.txt</h2>
+      <input type="file" id="fileInput" accept=".txt" />
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    document.getElementById("fileInput").addEventListener("change", function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const text = e.target.result;
+        const lines = text.split("\n");
+
+        const output = document.getElementById("output");
+        output.innerHTML = "";
+
+        const getStars = (value, max) => {
+          const stars = Math.round((value / max) * 5);
+          return "★".repeat(stars) + "☆".repeat(5 - stars);
+        };
+
+        const ramLine = lines.find(line => line.includes("Total Physical Memory"));
+        const cpuLine = lines.find(line => line.includes("LoadPercentage"));
+        const batteryLine = lines.find(line => line.includes("EstimatedChargeRemaining"));
+        const diskOk = lines.some(line => line.includes("OK"));
+
+        const ramValue = ramLine ? parseInt(ramLine.match(/\d+/g).pop()) : 0;
+        const cpuLoad = cpuLine ? parseInt(cpuLine.split("=").pop()) : 0;
+        const battery = batteryLine ? parseInt(batteryLine.match(/\d+/g).pop()) : 0;
+
+        const diskRating = diskOk ? 5 : 2;
+
+        output.innerHTML += `
+          <div class='rating'><strong>CPU:</strong> ${getStars(100 - cpuLoad, 100)}</div>
+          <div class='rating'><strong>RAM:</strong> ${getStars(ramValue, 16000)}</div>
+          <div class='rating'><strong>Battery:</strong> ${getStars(battery, 100)}</div>
+          <div class='rating'><strong>Disk:</strong> ${"★".repeat(diskRating)}${"☆".repeat(5 - diskRating)}</div>
+        `;
+
+        // Recommendation
+        let rec = "Normal Use";
+        if (ramValue >= 8000 && (100 - cpuLoad) > 50) rec = "Good for Coding";
+        if (ramValue >= 12000 && (100 - cpuLoad) > 70 && diskOk) rec = "Good for Gaming";
+
+        output.innerHTML += `<div class='result'>Recommendation: <span>${rec}</span></div>`;
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
